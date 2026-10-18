@@ -1,0 +1,101 @@
+diff --git a/scopehal/DSLabsOscilloscope.cpp b/scopehal/DSLabsOscilloscope.cpp
+index fa4c366..f9d3b43 100644
+--- a/scopehal/DSLabsOscilloscope.cpp
++++ b/scopehal/DSLabsOscilloscope.cpp
+@@ -228,7 +228,24 @@ void DSLabsOscilloscope::IdentifyHardware()
+ 	}
+ 
+ 	if (m_series == SERIES_UNKNOWN)
+-		LogWarning("Unknown DSLabs model \"%s\"\n", m_model.c_str());
++	{
++		//Generic libsigrok4DSL bridge: it reports its own channel layout
++		m_transport->SendCommand("ANACHANS?");
++		string ana = m_transport->ReadReply();
++		m_transport->SendCommand("DIGCHANS?");
++		string dig = m_transport->ReadReply();
++
++		if(!ana.empty() && !dig.empty() && isdigit(ana[0]) && isdigit(dig[0]))
++		{
++			m_analogChannelCount = stoul(ana);
++			m_digitalChannelCount = stoul(dig);
++			m_digitalChannelBase = m_analogChannelCount;
++			LogDebug("Bridge reports %zu analog and %zu digital channels for \"%s\"\n",
++				m_analogChannelCount, m_digitalChannelCount, m_model.c_str());
++		}
++		else
++			LogWarning("Unknown DSLabs model \"%s\"\n", m_model.c_str());
++	}
+ }
+ 
+ DSLabsOscilloscope::~DSLabsOscilloscope()
+@@ -376,7 +393,6 @@ bool DSLabsOscilloscope::AcquireData()
+ 		//Analog channels
+ 		if(chnum < m_analogChannelCount)
+ 		{
+-			abufs.push_back(buf);
+ 
+ 			//Scale and offset are sent in the header since they might have changed since the capture began
+ 			if(!m_transport->ReadRawData(sizeof(config), reinterpret_cast<uint8_t*>(&config)))
+@@ -398,6 +414,7 @@ bool DSLabsOscilloscope::AcquireData()
+ 				delete[] buf;
+ 				return false;
+ 			}
++			abufs.push_back(buf);
+ 
+ 			//Create our waveform
+ 			auto cap = new UniformAnalogWaveform;
+@@ -448,34 +465,32 @@ bool DSLabsOscilloscope::AcquireData()
+ 			cap->m_durations[0] = 1;
+ 			cap->m_samples[0] = last;
+ 
+-			//Read and de-duplicate the other samples
++			//Read and de-duplicate the other samples.
++			//Byte m holds samples 8m..8m+7, least significant bit first.
+ 			//TODO: can we vectorize this somehow?
+-			for(size_t m=1; m<memdepth; m++)
++			size_t nbits = memdepth * 8;
++			for(size_t i=1; i<nbits; i++)
+ 			{
+-				for (int bit = 0; bit < 8; bit++)
++				bool sample = ((buf[i / 8] >> (i % 8)) & 1) ? true : false;
++
++				//Deduplicate consecutive samples with same value, but always store the
++				//final sample so the waveform spans the whole capture
++				if( (last == sample) && ((i+1) < nbits) )
++					cap->m_durations[k] ++;
++
++				//Nope, it toggled - store the new value
++				else
+ 				{
+-					bool sample = (buf[m] & (1 << bit)) ? true : false;
+-
+-					//Deduplicate consecutive samples with same value
+-					//FIXME: temporary workaround for rendering bugs
+-					//if(last == sample)
+-					if( (last == sample) && ((m+1) < memdepth) && (m > 0))
+-						cap->m_durations[k] ++;
+-
+-					//Nope, it toggled - store the new value
+-					else
+-					{
+-						k++;
+-						cap->m_offsets[k] = first_sample + (m * 8) + bit;
+-						cap->m_durations[k] = 1;
+-						cap->m_samples[k] = sample;
+-						last = sample;
+-					}
++					k++;
++					cap->m_offsets[k] = first_sample + i;
++					cap->m_durations[k] = 1;
++					cap->m_samples[k] = sample;
++					last = sample;
+ 				}
+ 			}
+ 
+-			//Free space reclaimed by deduplication
+-			cap->Resize(k);
++			//Free space reclaimed by deduplication (k is the index of the last sample)
++			cap->Resize(k + 1);
+ 			cap->m_offsets.shrink_to_fit();
+ 			cap->m_durations.shrink_to_fit();
+ 			cap->m_samples.shrink_to_fit();

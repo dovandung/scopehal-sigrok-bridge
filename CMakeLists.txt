@@ -1,26 +1,23 @@
-cmake_minimum_required(VERSION 3.3)
-project(scopehal-sigrok-bridge)
+cmake_minimum_required(VERSION 3.13)
+project(scopehal-sigrok-bridge C CXX)
 
-set(WARNINGS "-Wall -Wextra -Wuninitialized ")
-set(WARNINGS "${WARNINGS} -Wshadow -Wunsafe-loop-optimizations -Wpedantic -Wcast-align -Wwrite-strings")
-set(WARNINGS "${WARNINGS} -Wvla")
-set(CMAKE_CXX_FLAGS "-g -fopenmp ${WARNINGS} --std=c++17 -mtune=native -ffast-math")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -fsanitize=address")
+# libsigrok4DSL is compiled from a DSView / ALL-LOGIC source tree:
+#   cmake -B build -DALLLOGIC_DIR=/path/to/ALL-LOGIC
+include(${PROJECT_SOURCE_DIR}/cmake/libsigrok4DSL.cmake)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE RelWithDebInfo)
+endif()
+
+set(WARNINGS "-Wall -Wextra -Wuninitialized -Wshadow -Wpedantic -Wcast-align -Wwrite-strings -Wvla")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNINGS}")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -fsanitize=address")
 
 if(WIN32)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_USE_MATH_DEFINES -D_POSIX_THREAD_SAFE_FUNCTIONS")
 endif()
-
-list(APPEND PKGDEPS
-	"libsigrok4DSL >= 0.2.0"
-	"libusb-1.0 >= 1.0.16"
-)
-
-find_package(PkgConfig)
-pkg_check_modules(PKGDEPS REQUIRED ${PKGDEPS})
-
-include_directories(${PKGDEPS_INCLUDE_DIRS})
 
 add_subdirectory("${PROJECT_SOURCE_DIR}/lib/log")
 add_subdirectory("${PROJECT_SOURCE_DIR}/lib/scpi-server-tools")
@@ -31,18 +28,17 @@ add_executable(scopehal-sigrok-bridge
 	src/srbinding.cpp
 	src/server.cpp
 	src/SigrokSCPIServer.cpp
-	src/WaveformServerThread.cpp
+	src/Capture.cpp
 )
 
-link_directories(${PKGDEPS_LIBRARY_DIRS})
+target_include_directories(scopehal-sigrok-bridge PRIVATE lib/)
+
 target_link_libraries(scopehal-sigrok-bridge
-	${PKGDEPS_LIBRARIES}
-	xptools
+	sigrok4DSL
 	scpi-server-tools
+	xptools
 	log
+	pthread
 )
 
-target_include_directories(scopehal-sigrok-bridge PRIVATE
-	lib/
-)
-
+install(TARGETS scopehal-sigrok-bridge RUNTIME DESTINATION bin)

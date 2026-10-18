@@ -1,4 +1,3 @@
-
 #ifndef SigrokSCPIServer_h
 #define SigrokSCPIServer_h
 
@@ -15,44 +14,45 @@ public:
 	virtual ~SigrokSCPIServer();
 
 protected:
-	virtual std::string GetMake();
-	virtual std::string GetModel();
-	virtual std::string GetSerial();
-	virtual std::string GetFirmwareVersion();
-	virtual size_t GetAnalogChannelCount();
-	virtual std::vector<size_t> GetSampleRates();
-	virtual std::vector<size_t> GetSampleDepths();
+	virtual std::string GetMake() override;
+	virtual std::string GetModel() override;
+	virtual std::string GetSerial() override;
+	virtual std::string GetFirmwareVersion() override;
+	virtual size_t GetAnalogChannelCount() override;
+	virtual std::vector<size_t> GetSampleRates() override;
+	virtual std::vector<size_t> GetSampleDepths() override;
 
 	virtual bool OnCommand(
 		const std::string& line,
 		const std::string& subject,
 		const std::string& cmd,
-		const std::vector<std::string>& args);
+		const std::vector<std::string>& args) override;
 
 	virtual bool OnQuery(
 		const std::string& line,
 		const std::string& subject,
-		const std::string& cmd);
+		const std::string& cmd) override;
 
-	virtual bool GetChannelID(const std::string& subject, size_t& id_out);
-	virtual ChannelType GetChannelType(size_t channel);
+	virtual bool GetChannelID(const std::string& subject, size_t& id_out) override;
+	virtual ChannelType GetChannelType(size_t channel) override;
 
-	virtual void AcquisitionStart(bool oneShot = false);
-	virtual void AcquisitionForceTrigger();
-	virtual void AcquisitionStop();
-	virtual void SetChannelEnabled(size_t chIndex, bool enabled);
-	virtual void SetAnalogCoupling(size_t chIndex, const std::string& coupling);
-	virtual void SetAnalogRange(size_t chIndex, double range_V);
-	virtual void SetAnalogOffset(size_t chIndex, double offset_V);
-	virtual void SetDigitalThreshold(size_t chIndex, double threshold_V);
-	virtual void SetDigitalHysteresis(size_t chIndex, double hysteresis);
-	virtual void SetSampleRate(uint64_t rate_hz);
-	virtual void SetSampleDepth(uint64_t depth);
-	virtual void SetTriggerDelay(uint64_t delay_fs);
-	virtual void SetTriggerSource(size_t chIndex);
-	virtual void SetTriggerLevel(double level_V);
-	virtual void SetTriggerTypeEdge();
-	virtual void SetEdgeTriggerEdge(const std::string& edge);
+	virtual void AcquisitionStart(bool oneShot = false) override;
+	virtual void AcquisitionForceTrigger() override;
+	virtual void AcquisitionStop() override;
+	virtual bool IsTriggerArmed() override;
+	virtual void SetChannelEnabled(size_t chIndex, bool enabled) override;
+	virtual void SetAnalogCoupling(size_t chIndex, const std::string& coupling) override;
+	virtual void SetAnalogRange(size_t chIndex, double range_V) override;
+	virtual void SetAnalogOffset(size_t chIndex, double offset_V) override;
+	virtual void SetDigitalThreshold(size_t chIndex, double threshold_V) override;
+	virtual void SetDigitalHysteresis(size_t chIndex, double hysteresis) override;
+	virtual void SetSampleRate(uint64_t rate_hz) override;
+	virtual void SetSampleDepth(uint64_t depth) override;
+	virtual void SetTriggerDelay(uint64_t delay_fs) override;
+	virtual void SetTriggerSource(size_t chIndex) override;
+	virtual void SetTriggerLevel(double level_V) override;
+	virtual void SetTriggerTypeEdge() override;
+	virtual void SetEdgeTriggerEdge(const std::string& edge) override;
 };
 
 #endif
