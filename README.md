@@ -20,8 +20,8 @@ With ALL-LOGIC that is:
 | Driver | Hardware |
 |---|---|
 | `DSLogic` | DreamSourceLab DSLogic |
-| `ch32` | CH32H417 logic analyzer |
-| `slogic16u3` | Sipeed SLogic Combo 8 / 16U3 / 32U3 |
+| `ch32-logic` | CH32H417 logic analyzer |
+| `slogic-16u3` | Sipeed SLogic Combo 8 / 16U3 / 32U3 |
 | `pxlogic` | PXLogic32U3 |
 | `atk-logic` | Alientek ATK-Logic (DL16 ...) |
 | `fx2lafw` | nanoDLA / Cypress FX2 |
@@ -55,7 +55,7 @@ at the directory holding the firmware/bitstreams (DSView's `res` folder).
 
 ```sh
 ./build/scopehal-sigrok-bridge --list          # show detected devices
-./build/scopehal-sigrok-bridge slogic          # by name substring
+./build/scopehal-sigrok-bridge fx3             # by name substring (Cypress FX3)
 ./build/scopehal-sigrok-bridge fx2lafw         # or by driver name
 ./build/scopehal-sigrok-bridge 0               # or by index
 ```
